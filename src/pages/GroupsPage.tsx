@@ -24,7 +24,16 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Search, Plus, User, LogOut, ArrowLeftRight, ChevronDown, Trash2 } from 'lucide-react'
+import {
+  Search,
+  Plus,
+  User,
+  LogOut,
+  ArrowLeftRight,
+  ChevronDown,
+  Trash2,
+  Loader2,
+} from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,6 +64,7 @@ export default function GroupsPage() {
   const [hasSearched, setHasSearched] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
   const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [processingId, setProcessingId] = useState<string | null>(null)
 
   const [viewingMembersGroup, setViewingMembersGroup] = useState<any | null>(null)
   const [groupMembers, setGroupMembers] = useState<any[]>([])
@@ -103,36 +113,46 @@ export default function GroupsPage() {
   }, [viewingMembersGroup])
 
   const handleApproveRequest = async (req: any, role: string = 'member') => {
+    setProcessingId(req.id)
     try {
       await api.groups.updateMember(req.id, {
         status: 'approved',
         role,
-        user: req.user,
-        group: req.group,
       })
       setPendingApprovals((prev) => prev.filter((p) => p.id !== req.id))
       toast({
         title: 'Sucesso',
-        description: `Solicitação aprovada como ${role === 'admin' ? 'Administrador' : 'Membro'}.`,
+        description: 'Membro atualizado com sucesso',
       })
       loadMyGroups()
     } catch (e: any) {
-      toast({ title: 'Erro', description: getErrorMessage(e), variant: 'destructive' })
+      toast({
+        title: 'Erro',
+        description: 'Erro ao atualizar membro. Tente novamente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setProcessingId(null)
     }
   }
 
   const handleDenyRequest = async (req: any) => {
+    setProcessingId(req.id)
     try {
       await api.groups.updateMember(req.id, {
         status: 'denied',
-        user: req.user,
-        group: req.group,
       })
       setPendingApprovals((prev) => prev.filter((p) => p.id !== req.id))
-      toast({ title: 'Sucesso', description: 'Solicitação negada.' })
+      toast({ title: 'Sucesso', description: 'Solicitacao recusada' })
       loadMyGroups()
     } catch (e: any) {
-      toast({ title: 'Erro', description: getErrorMessage(e), variant: 'destructive' })
+      toast({
+        title: 'Erro',
+        description: 'Erro ao atualizar membro. Tente novamente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setProcessingId(null)
     }
   }
 
@@ -281,22 +301,40 @@ export default function GroupsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 min-w-[80px]"
                       onClick={() => handleDenyRequest(req)}
+                      disabled={processingId === req.id}
                     >
-                      Recusar
+                      {processingId === req.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Recusar'
+                      )}
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-white min-w-[100px]"
+                          disabled={processingId === req.id}
+                        >
+                          {processingId === req.id && (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )}
                           Aprovar <ChevronDown className="ml-1 h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleApproveRequest(req, 'member')}>
+                        <DropdownMenuItem
+                          onClick={() => handleApproveRequest(req, 'member')}
+                          disabled={processingId === req.id}
+                        >
                           Como Membro
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleApproveRequest(req, 'admin')}>
+                        <DropdownMenuItem
+                          onClick={() => handleApproveRequest(req, 'admin')}
+                          disabled={processingId === req.id}
+                        >
                           Como Administrador
                         </DropdownMenuItem>
                       </DropdownMenuContent>
