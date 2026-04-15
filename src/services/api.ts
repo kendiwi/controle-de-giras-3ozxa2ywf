@@ -8,6 +8,7 @@ export const api = {
         expand: 'group',
       }),
     create: (data: any) => pb.collection('groups').create(data),
+    delete: (id: string) => pb.collection('groups').delete(id),
     join: (userId: string, groupId: string) =>
       pb
         .collection('group_members')

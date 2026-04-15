@@ -24,7 +24,18 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Search, Plus, User, LogOut, ArrowLeftRight, ChevronDown } from 'lucide-react'
+import { Search, Plus, User, LogOut, ArrowLeftRight, ChevronDown, Trash2 } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { useRealtime } from '@/hooks/use-realtime'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
 
@@ -164,6 +175,20 @@ export default function GroupsPage() {
     }
   }
 
+  const handleDeleteGroup = async (groupId: string) => {
+    try {
+      await api.groups.delete(groupId)
+      toast({ title: 'Sucesso', description: 'Terreiro excluído com sucesso.' })
+      if (activeGroup?.id === groupId) {
+        setActiveGroup(null)
+      }
+      setSearchResults((prev) => prev.filter((g) => g.id !== groupId))
+      loadMyGroups()
+    } catch (e: any) {
+      toast({ title: 'Erro', description: getErrorMessage(e), variant: 'destructive' })
+    }
+  }
+
   const handleLogout = () => {
     signOut()
     navigate('/auth')
@@ -284,7 +309,7 @@ export default function GroupsPage() {
             return (
               <Card
                 key={rel.id}
-                className="cursor-pointer hover:border-primary transition-colors"
+                className="cursor-pointer hover:border-primary transition-colors relative group"
                 onClick={() => handleSelectGroup(rel.expand.group, isChief ? 'chefe' : 'member')}
               >
                 <CardHeader className="p-4 flex flex-row items-center justify-between gap-4">
@@ -292,9 +317,44 @@ export default function GroupsPage() {
                     <CardTitle className="text-lg">{rel.expand.group.name}</CardTitle>
                     <CardDescription>Toque para entrar</CardDescription>
                   </div>
-                  <Badge variant={isChief ? 'default' : 'secondary'}>
-                    {isChief ? 'Chefe' : 'Membro'}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={isChief ? 'default' : 'secondary'}>
+                      {isChief ? 'Chefe' : 'Membro'}
+                    </Badge>
+                    {isChief && (
+                      <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 w-8"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir Terreiro</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja excluir o terreiro "{rel.expand.group.name}"?
+                                Esta ação não pode ser desfeita e todos os dados serão apagados.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteGroup(rel.expand.group.id)}
+                                className="bg-red-500 hover:bg-red-600 text-white"
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    )}
+                  </div>
                 </CardHeader>
               </Card>
             )
@@ -367,9 +427,11 @@ export default function GroupsPage() {
                   </p>
                 )}
                 {searchResults.map((g) => {
-                  const isMember = activeGroups.some((mg) => mg.group === g.id)
+                  const activeRel = activeGroups.find((mg) => mg.group === g.id)
                   const pendingRel = pendingGroups.find((mg) => mg.group === g.id)
+                  const isMember = !!activeRel
                   const isPending = !!pendingRel
+                  const isChief = activeRel?.role === 'chefe' || g.owner === user?.id
 
                   const createdDate = new Date(g.created)
                   const formattedDate = !isNaN(createdDate.getTime())
@@ -378,7 +440,7 @@ export default function GroupsPage() {
 
                   return (
                     <div key={g.id} className="flex flex-col p-3 border rounded-lg gap-3">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex flex-col overflow-hidden">
                           <span className="font-medium truncate">{g.name}</span>
                           <span className="text-xs text-muted-foreground truncate">
@@ -389,13 +451,13 @@ export default function GroupsPage() {
                             Criado em: {formattedDate}
                           </span>
                         </div>
-                        <div className="flex-shrink-0">
-                          {!isMember && !isPending && (
+                        <div className="flex-shrink-0 flex items-center gap-2">
+                          {!isMember && !isPending && !isChief && (
                             <Button size="sm" onClick={() => handleJoin(g.id)}>
                               Pedir Acesso
                             </Button>
                           )}
-                          {isMember && <Badge variant="outline">Membro</Badge>}
+                          {isMember && !isChief && <Badge variant="outline">Membro</Badge>}
                           {isPending && pendingRel && (
                             <div className="flex items-center gap-2">
                               <Badge variant="secondary" className="hidden sm:inline-flex">
@@ -411,6 +473,38 @@ export default function GroupsPage() {
                                 Cancelar
                               </Button>
                             </div>
+                          )}
+                          {isChief && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 flex items-center gap-2"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  Excluir Terreiro
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir Terreiro</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tem certeza que deseja excluir o terreiro "{g.name}"? Esta ação
+                                    não pode ser desfeita e todos os dados serão apagados.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteGroup(g.id)}
+                                    className="bg-red-500 hover:bg-red-600 text-white"
+                                  >
+                                    Excluir
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           )}
                         </div>
                       </div>
