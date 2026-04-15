@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-15T05:04:01.746Z",
+  "generatedAt": "2026-04-15T05:11:57.513Z",
   "collections": [
     {
       "name": "users",
@@ -139,7 +139,11 @@
           "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
-      "indexes": []
+      "indexes": [
+        "CREATE INDEX `idx_group_members_user` ON `group_members` (user)",
+        "CREATE INDEX `idx_group_members_group` ON `group_members` (group)",
+        "CREATE INDEX `idx_group_members_status` ON `group_members` (status)"
+      ]
     },
     {
       "name": "mediums",

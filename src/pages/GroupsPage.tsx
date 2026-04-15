@@ -367,34 +367,50 @@ export default function GroupsPage() {
                   const isMember = activeGroups.some((mg) => mg.group === g.id)
                   const pendingRel = pendingGroups.find((mg) => mg.group === g.id)
                   const isPending = !!pendingRel
+
+                  const createdDate = new Date(g.created)
+                  const formattedDate = !isNaN(createdDate.getTime())
+                    ? createdDate.toLocaleDateString('pt-BR')
+                    : 'Desconhecida'
+
                   return (
-                    <div
-                      key={g.id}
-                      className="flex items-center justify-between p-3 border rounded-lg gap-2"
-                    >
-                      <span className="font-medium truncate flex-1">{g.name}</span>
-                      {!isMember && !isPending && (
-                        <Button size="sm" onClick={() => handleJoin(g.id)}>
-                          Pedir Acesso
-                        </Button>
-                      )}
-                      {isMember && <Badge variant="outline">Membro</Badge>}
-                      {isPending && pendingRel && (
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="hidden sm:inline-flex">
-                            Pendente
-                          </Badge>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
-                            onClick={() => handleCancelRequest(pendingRel.id)}
-                            disabled={cancellingId === pendingRel.id}
-                          >
-                            Cancelar
-                          </Button>
+                    <div key={g.id} className="flex flex-col p-3 border rounded-lg gap-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-col overflow-hidden">
+                          <span className="font-medium truncate">{g.name}</span>
+                          <span className="text-xs text-muted-foreground truncate">
+                            Chefe:{' '}
+                            {g.expand?.owner?.name || g.expand?.owner?.email || 'Desconhecido'}
+                          </span>
+                          <span className="text-xs text-muted-foreground truncate">
+                            Criado em: {formattedDate}
+                          </span>
                         </div>
-                      )}
+                        <div className="flex-shrink-0">
+                          {!isMember && !isPending && (
+                            <Button size="sm" onClick={() => handleJoin(g.id)}>
+                              Pedir Acesso
+                            </Button>
+                          )}
+                          {isMember && <Badge variant="outline">Membro</Badge>}
+                          {isPending && pendingRel && (
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="hidden sm:inline-flex">
+                                Pendente
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
+                                onClick={() => handleCancelRequest(pendingRel.id)}
+                                disabled={cancellingId === pendingRel.id}
+                              >
+                                Cancelar
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )
                 })}

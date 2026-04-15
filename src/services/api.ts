@@ -12,7 +12,8 @@ export const api = {
       pb
         .collection('group_members')
         .create({ user: userId, group: groupId, status: 'pending', role: 'member' }),
-    search: (query: string) => pb.collection('groups').getFullList({ filter: `name ~ "${query}"` }),
+    search: (query: string) =>
+      pb.collection('groups').getFullList({ filter: `name ~ "${query}"`, expand: 'owner' }),
     getMembers: (groupId: string) =>
       pb
         .collection('group_members')
