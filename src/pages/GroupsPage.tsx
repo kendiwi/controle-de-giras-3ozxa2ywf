@@ -35,6 +35,8 @@ export default function GroupsPage() {
 
   const [activeGroups, setActiveGroups] = useState<any[]>([])
   const [pendingGroups, setPendingGroups] = useState<any[]>([])
+  const [pendingApprovals, setPendingApprovals] = useState<any[]>([])
+  const [isOwnerOrAdmin, setIsOwnerOrAdmin] = useState(false)
 
   const [search, setSearch] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
@@ -47,6 +49,10 @@ export default function GroupsPage() {
       const records = await api.groups.listMy(user.id)
       setActiveGroups(records.filter((r: any) => r.status === 'approved'))
       setPendingGroups(records.filter((r: any) => r.status === 'pending'))
+
+      const info = await api.groups.getPendingApprovalsInfo(user.id)
+      setIsOwnerOrAdmin(info.isOwnerOrAdmin)
+      setPendingApprovals(info.requests)
     } catch (e) {
       console.error(e)
     }
@@ -63,6 +69,26 @@ export default function GroupsPage() {
   const handleSelectGroup = (group: Group) => {
     setActiveGroup({ id: group.id, name: group.name })
     navigate('/giras')
+  }
+
+  const handleApproveRequest = async (requestId: string) => {
+    try {
+      await api.groups.updateMember(requestId, { status: 'approved' })
+      toast({ title: 'Sucesso', description: 'Solicitação aprovada.' })
+      loadMyGroups()
+    } catch (e: any) {
+      toast({ title: 'Erro', description: e.message, variant: 'destructive' })
+    }
+  }
+
+  const handleDenyRequest = async (requestId: string) => {
+    try {
+      await api.groups.updateMember(requestId, { status: 'denied' })
+      toast({ title: 'Sucesso', description: 'Solicitação negada.' })
+      loadMyGroups()
+    } catch (e: any) {
+      toast({ title: 'Erro', description: e.message, variant: 'destructive' })
+    }
   }
 
   const handleCreateGroup = async () => {
@@ -167,6 +193,48 @@ export default function GroupsPage() {
       </div>
 
       <div className="space-y-6">
+        {isOwnerOrAdmin && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold border-b pb-2 text-primary">Para Aprovação</h2>
+            {pendingApprovals.map((req) => (
+              <Card key={req.id} className="border-primary/20 bg-primary/5">
+                <CardHeader className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-base">
+                      {req.expand?.user?.name || req.expand?.user?.email || 'Usuário'}
+                    </CardTitle>
+                    <CardDescription>
+                      quer entrar em <strong>{req.expand?.group?.name}</strong>
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                      onClick={() => handleDenyRequest(req.id)}
+                    >
+                      Negar
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => handleApproveRequest(req.id)}
+                    >
+                      Aprovar
+                    </Button>
+                  </div>
+                </CardHeader>
+              </Card>
+            ))}
+            {pendingApprovals.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-4">
+                Não há solicitações pendentes para revisar no momento.
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="space-y-4">
           <h2 className="text-lg font-semibold border-b pb-2">Meus Terreiros</h2>
           {activeGroups.map((rel) => (
@@ -189,7 +257,7 @@ export default function GroupsPage() {
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold border-b pb-2">Solicitações Pendentes</h2>
+          <h2 className="text-lg font-semibold border-b pb-2">Minhas Solicitações</h2>
           {pendingGroups.map((rel) => (
             <Card key={rel.id} className="opacity-70 bg-muted/50">
               <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0">
@@ -205,7 +273,7 @@ export default function GroupsPage() {
           ))}
           {pendingGroups.length === 0 && (
             <p className="text-center text-sm text-muted-foreground py-4">
-              Nenhuma solicitação pendente.
+              Nenhuma solicitação pendente enviada.
             </p>
           )}
         </div>
