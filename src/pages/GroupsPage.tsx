@@ -73,9 +73,15 @@ export default function GroupsPage() {
     navigate('/giras')
   }
 
-  const handleApproveRequest = async (requestId: string, role: string = 'member') => {
+  const handleApproveRequest = async (req: any, role: string = 'member') => {
     try {
-      await api.groups.updateMember(requestId, { status: 'approved', role })
+      await api.groups.updateMember(req.id, {
+        status: 'approved',
+        role,
+        user: req.user,
+        group: req.group,
+      })
+      setPendingApprovals((prev) => prev.filter((p) => p.id !== req.id))
       toast({
         title: 'Sucesso',
         description: `Solicitação aprovada como ${role === 'admin' ? 'Chefe' : 'Membro'}.`,
@@ -86,9 +92,14 @@ export default function GroupsPage() {
     }
   }
 
-  const handleDenyRequest = async (requestId: string) => {
+  const handleDenyRequest = async (req: any) => {
     try {
-      await api.groups.updateMember(requestId, { status: 'denied' })
+      await api.groups.updateMember(req.id, {
+        status: 'denied',
+        user: req.user,
+        group: req.group,
+      })
+      setPendingApprovals((prev) => prev.filter((p) => p.id !== req.id))
       toast({ title: 'Sucesso', description: 'Solicitação negada.' })
       loadMyGroups()
     } catch (e: any) {
@@ -233,7 +244,7 @@ export default function GroupsPage() {
                       size="sm"
                       variant="outline"
                       className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                      onClick={() => handleDenyRequest(req.id)}
+                      onClick={() => handleDenyRequest(req)}
                     >
                       Recusar
                     </Button>
@@ -244,10 +255,10 @@ export default function GroupsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleApproveRequest(req.id, 'member')}>
+                        <DropdownMenuItem onClick={() => handleApproveRequest(req, 'member')}>
                           Como Membro
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleApproveRequest(req.id, 'admin')}>
+                        <DropdownMenuItem onClick={() => handleApproveRequest(req, 'admin')}>
                           Como Chefe
                         </DropdownMenuItem>
                       </DropdownMenuContent>
