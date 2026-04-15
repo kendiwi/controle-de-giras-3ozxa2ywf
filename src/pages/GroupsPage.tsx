@@ -130,7 +130,10 @@ export default function GroupsPage() {
     if (search.length < 3) return
     setHasSearched(false)
     const res = await api.groups.search(search)
-    setSearchResults(res)
+
+    const uniqueResults = Array.from(new Map(res.map((g) => [g.id, g])).values())
+
+    setSearchResults(uniqueResults)
     setHasSearched(true)
   }
 
@@ -380,7 +383,7 @@ export default function GroupsPage() {
                           <span className="font-medium truncate">{g.name}</span>
                           <span className="text-xs text-muted-foreground truncate">
                             Chefe:{' '}
-                            {g.expand?.owner?.name || g.expand?.owner?.email || 'Desconhecido'}
+                            {g.expand?.owner?.name || g.expand?.owner?.email || 'Não informado'}
                           </span>
                           <span className="text-xs text-muted-foreground truncate">
                             Criado em: {formattedDate}
