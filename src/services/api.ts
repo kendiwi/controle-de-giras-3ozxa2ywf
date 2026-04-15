@@ -5,7 +5,10 @@ export const api = {
     listMy: (userId: string) =>
       pb
         .collection('group_members')
-        .getFullList({ filter: `user = "${userId}" && status = "approved"`, expand: 'group' }),
+        .getFullList({
+          filter: `user = "${userId}" && (status = "approved" || status = "pending")`,
+          expand: 'group',
+        }),
     create: (data: any) => pb.collection('groups').create(data),
     join: (userId: string, groupId: string) =>
       pb

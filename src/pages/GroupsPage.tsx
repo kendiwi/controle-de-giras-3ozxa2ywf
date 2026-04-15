@@ -5,7 +5,7 @@ import { useActiveGroup, Group } from '@/contexts/ActiveGroupContext'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import {
   Dialog,
@@ -14,28 +14,51 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Search, Plus } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Search, Plus, User, LogOut, ArrowLeftRight } from 'lucide-react'
+import { useRealtime } from '@/hooks/use-realtime'
 
 export default function GroupsPage() {
-  const { user } = useAuth()
-  const { setActiveGroup } = useActiveGroup()
+  const { user, signOut } = useAuth()
+  const { activeGroup, setActiveGroup } = useActiveGroup()
   const navigate = useNavigate()
   const { toast } = useToast()
-  const [myGroups, setMyGroups] = useState<any[]>([])
+
+  const [activeGroups, setActiveGroups] = useState<any[]>([])
+  const [pendingGroups, setPendingGroups] = useState<any[]>([])
 
   const [search, setSearch] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [hasSearched, setHasSearched] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
 
+  const loadMyGroups = async () => {
+    if (!user) return
+    try {
+      const records = await api.groups.listMy(user.id)
+      setActiveGroups(records.filter((r: any) => r.status === 'approved'))
+      setPendingGroups(records.filter((r: any) => r.status === 'pending'))
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   useEffect(() => {
     if (user) loadMyGroups()
   }, [user])
 
-  const loadMyGroups = async () => {
-    const records = await api.groups.listMy(user.id)
-    setMyGroups(records)
-  }
+  useRealtime('group_members', () => {
+    loadMyGroups()
+  })
 
   const handleSelectGroup = (group: Group) => {
     setActiveGroup({ id: group.id, name: group.name })
@@ -47,11 +70,14 @@ export default function GroupsPage() {
     try {
       const g = await api.groups.create({ name: newGroupName, owner: user.id })
       await api.groups.join(user.id, g.id)
-      await api.groups.updateMember((await api.groups.getMembers(g.id))[0].id, {
-        status: 'approved',
-        role: 'admin',
-      }) // Quick hack to self-approve
-      toast({ title: 'Sucesso', description: 'Grupo criado com sucesso!' })
+      const members = await api.groups.getMembers(g.id)
+      if (members.length > 0) {
+        await api.groups.updateMember(members[0].id, {
+          status: 'approved',
+          role: 'admin',
+        })
+      }
+      toast({ title: 'Sucesso', description: 'Terreiro criado com sucesso!' })
       setNewGroupName('')
       loadMyGroups()
     } catch (e: any) {
@@ -71,6 +97,7 @@ export default function GroupsPage() {
     try {
       await api.groups.join(user.id, groupId)
       toast({ title: 'Sucesso', description: 'Solicitação enviada. Aguarde aprovação.' })
+      loadMyGroups()
     } catch (e: any) {
       toast({
         title: 'Erro',
@@ -80,34 +107,111 @@ export default function GroupsPage() {
     }
   }
 
+  const handleLogout = () => {
+    signOut()
+    navigate('/auth')
+  }
+
   return (
-    <div className="p-4 space-y-6 max-w-lg mx-auto pt-10">
+    <div className="p-4 space-y-6 max-w-lg mx-auto pt-6">
+      <div className="flex items-center justify-between mb-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => activeGroup && navigate('/giras')}
+          disabled={!activeGroup}
+          className="flex gap-2"
+        >
+          <ArrowLeftRight className="h-4 w-4" />
+          Trocar
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="relative h-8 w-8 rounded-full border border-border shadow-sm"
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarImage
+                  src={user?.avatar ? api.getFileUrl(user, user.avatar) : ''}
+                  alt={user?.name || user?.email}
+                />
+                <AvatarFallback>
+                  <User className="h-4 w-4" />
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{user?.name || 'Usuário'}</p>
+                <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sair da conta</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-bold">Seus Terreiros</h1>
         <p className="text-muted-foreground text-sm">Selecione um grupo para continuar</p>
       </div>
 
-      <div className="space-y-4">
-        {myGroups.map((rel) => (
-          <Card
-            key={rel.id}
-            className="cursor-pointer hover:border-primary transition-colors"
-            onClick={() => handleSelectGroup(rel.expand.group)}
-          >
-            <CardHeader className="p-4">
-              <CardTitle className="text-lg">{rel.expand.group.name}</CardTitle>
-              <CardDescription>Toque para entrar</CardDescription>
-            </CardHeader>
-          </Card>
-        ))}
-        {myGroups.length === 0 && (
-          <p className="text-center text-sm text-muted-foreground py-4">
-            Você ainda não participa de nenhum grupo.
-          </p>
-        )}
+      <div className="space-y-6">
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold border-b pb-2">Meus Terreiros</h2>
+          {activeGroups.map((rel) => (
+            <Card
+              key={rel.id}
+              className="cursor-pointer hover:border-primary transition-colors"
+              onClick={() => handleSelectGroup(rel.expand.group)}
+            >
+              <CardHeader className="p-4">
+                <CardTitle className="text-lg">{rel.expand.group.name}</CardTitle>
+                <CardDescription>Toque para entrar</CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
+          {activeGroups.length === 0 && (
+            <p className="text-center text-sm text-muted-foreground py-4">
+              Você ainda não participa de nenhum grupo.
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold border-b pb-2">Solicitações Pendentes</h2>
+          {pendingGroups.map((rel) => (
+            <Card key={rel.id} className="opacity-70 bg-muted/50">
+              <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle className="text-lg">
+                    {rel.expand?.group?.name || 'Grupo Desconhecido'}
+                  </CardTitle>
+                  <CardDescription>Aguardando aprovação</CardDescription>
+                </div>
+                <Badge variant="secondary">Pendente</Badge>
+              </CardHeader>
+            </Card>
+          ))}
+          {pendingGroups.length === 0 && (
+            <p className="text-center text-sm text-muted-foreground py-4">
+              Nenhuma solicitação pendente.
+            </p>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 pt-4">
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline" className="w-full flex gap-2">
@@ -134,19 +238,21 @@ export default function GroupsPage() {
                   </p>
                 )}
                 {searchResults.map((g) => {
-                  const isMember = myGroups.some((mg) => mg.group === g.id)
+                  const isMember = activeGroups.some((mg) => mg.group === g.id)
+                  const isPending = pendingGroups.some((mg) => mg.group === g.id)
                   return (
                     <div
                       key={g.id}
                       className="flex items-center justify-between p-3 border rounded-lg"
                     >
                       <span className="font-medium truncate">{g.name}</span>
-                      {!isMember && (
+                      {!isMember && !isPending && (
                         <Button size="sm" onClick={() => handleJoin(g.id)}>
                           Pedir Acesso
                         </Button>
                       )}
                       {isMember && <span className="text-xs text-muted-foreground">Membro</span>}
+                      {isPending && <span className="text-xs text-muted-foreground">Pendente</span>}
                     </div>
                   )
                 })}
