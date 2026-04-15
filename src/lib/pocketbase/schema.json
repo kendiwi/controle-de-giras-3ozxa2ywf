@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-15T05:57:05.014Z",
+  "generatedAt": "2026-04-15T17:46:42.294Z",
   "collections": [
     {
       "name": "users",
@@ -92,7 +92,7 @@
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
         "create": "@request.auth.id != '' && user = @request.auth.id && role = 'member' && status = 'pending'",
-        "update": "@request.auth.id != '' && @collection.group_members.group ?= group && @collection.group_members.user ?= @request.auth.id && @collection.group_members.status ?= 'approved' && (@collection.group_members.role ?= 'chefe' || @collection.group_members.role ?= 'admin')",
+        "update": "@request.auth.id != '' && (user = @request.auth.id || (@collection.group_members.group ?= group && @collection.group_members.user ?= @request.auth.id && @collection.group_members.status ?= 'approved' && (@collection.group_members.role ?= 'chefe' || @collection.group_members.role ?= 'admin')))",
         "delete": "@request.auth.id != '' && (user = @request.auth.id || (@collection.group_members.group ?= group && @collection.group_members.user ?= @request.auth.id && @collection.group_members.status ?= 'approved' && (@collection.group_members.role ?= 'chefe' || @collection.group_members.role ?= 'admin')))"
       },
       "fields": [
