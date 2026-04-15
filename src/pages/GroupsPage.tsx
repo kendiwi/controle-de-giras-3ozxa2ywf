@@ -43,6 +43,7 @@ export default function GroupsPage() {
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [hasSearched, setHasSearched] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
 
   const loadMyGroups = async () => {
     if (!user) return
@@ -131,6 +132,19 @@ export default function GroupsPage() {
         description: getErrorMessage(e) || 'Você já enviou solicitação ou ocorreu um erro.',
         variant: 'destructive',
       })
+    }
+  }
+
+  const handleCancelRequest = async (requestId: string) => {
+    setCancellingId(requestId)
+    try {
+      await api.groups.deleteMember(requestId)
+      toast({ title: 'Sucesso', description: 'Solicitação cancelada com sucesso.' })
+      loadMyGroups()
+    } catch (e: any) {
+      toast({ title: 'Erro', description: getErrorMessage(e), variant: 'destructive' })
+    } finally {
+      setCancellingId(null)
     }
   }
 
@@ -260,15 +274,26 @@ export default function GroupsPage() {
         <div className="space-y-4">
           <h2 className="text-lg font-semibold border-b pb-2">Minhas Solicitações</h2>
           {pendingGroups.map((rel) => (
-            <Card key={rel.id} className="opacity-70 bg-muted/50">
-              <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0">
+            <Card key={rel.id} className="opacity-90 bg-muted/30">
+              <CardHeader className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <CardTitle className="text-lg">
-                    {rel.expand?.group?.name || 'Grupo Desconhecido'}
-                  </CardTitle>
+                  <div className="flex items-center gap-2 mb-1">
+                    <CardTitle className="text-lg">
+                      {rel.expand?.group?.name || 'Grupo Desconhecido'}
+                    </CardTitle>
+                    <Badge variant="secondary">Pendente</Badge>
+                  </div>
                   <CardDescription>Aguardando aprovação</CardDescription>
                 </div>
-                <Badge variant="secondary">Pendente</Badge>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                  onClick={() => handleCancelRequest(rel.id)}
+                  disabled={cancellingId === rel.id}
+                >
+                  {cancellingId === rel.id ? 'Cancelando...' : 'Cancelar Solicitação'}
+                </Button>
               </CardHeader>
             </Card>
           ))}
@@ -308,20 +333,36 @@ export default function GroupsPage() {
                 )}
                 {searchResults.map((g) => {
                   const isMember = activeGroups.some((mg) => mg.group === g.id)
-                  const isPending = pendingGroups.some((mg) => mg.group === g.id)
+                  const pendingRel = pendingGroups.find((mg) => mg.group === g.id)
+                  const isPending = !!pendingRel
                   return (
                     <div
                       key={g.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
+                      className="flex items-center justify-between p-3 border rounded-lg gap-2"
                     >
-                      <span className="font-medium truncate">{g.name}</span>
+                      <span className="font-medium truncate flex-1">{g.name}</span>
                       {!isMember && !isPending && (
                         <Button size="sm" onClick={() => handleJoin(g.id)}>
                           Pedir Acesso
                         </Button>
                       )}
-                      {isMember && <span className="text-xs text-muted-foreground">Membro</span>}
-                      {isPending && <span className="text-xs text-muted-foreground">Pendente</span>}
+                      {isMember && <Badge variant="outline">Membro</Badge>}
+                      {isPending && pendingRel && (
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="hidden sm:inline-flex">
+                            Pendente
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
+                            onClick={() => handleCancelRequest(pendingRel.id)}
+                            disabled={cancellingId === pendingRel.id}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )
                 })}

@@ -18,6 +18,7 @@ export const api = {
         .collection('group_members')
         .getFullList({ filter: `group = "${groupId}" && status = "pending"`, expand: 'user' }),
     updateMember: (id: string, data: any) => pb.collection('group_members').update(id, data),
+    deleteMember: (id: string) => pb.collection('group_members').delete(id),
     getPendingApprovalsInfo: async (userId: string) => {
       const ownedGroups = await pb.collection('groups').getFullList({
         filter: `owner = "${userId}"`,
