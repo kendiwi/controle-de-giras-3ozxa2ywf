@@ -1,12 +1,27 @@
-/* Home Page - Replace this page layout, components, content, behavior with what you want and translate to the language of the user */
-const Index = () => {
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/hooks/use-auth'
+import { useActiveGroup } from '@/contexts/ActiveGroupContext'
+
+export default function Index() {
+  const { user, loading } = useAuth()
+  const { activeGroup } = useActiveGroup()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (loading) return
+    if (!user) {
+      navigate('/auth', { replace: true })
+    } else if (!activeGroup) {
+      navigate('/groups', { replace: true })
+    } else {
+      navigate('/giras', { replace: true })
+    }
+  }, [user, loading, activeGroup, navigate])
+
   return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">
-        This is a example page ready to be rewritten with your own content
-      </h1>
+    <div className="flex h-screen items-center justify-center">
+      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
     </div>
   )
 }
-
-export default Index

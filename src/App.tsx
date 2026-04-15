@@ -1,28 +1,48 @@
-/* Main App Component - Handles routing (using react-router-dom), query client and other providers - use this file to add all routes */
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { AuthProvider } from './hooks/use-auth'
+import { ActiveGroupProvider } from './contexts/ActiveGroupContext'
+
+import Layout from './components/Layout'
 import Index from './pages/Index'
 import NotFound from './pages/NotFound'
-import Layout from './components/Layout'
-
-// ONLY IMPORT AND RENDER WORKING PAGES, NEVER ADD PLACEHOLDER COMPONENTS OR PAGES IN THIS FILE
-// AVOID REMOVING ANY CONTEXT PROVIDERS FROM THIS FILE (e.g. TooltipProvider, Toaster, Sonner)
+import AuthPage from './pages/AuthPage'
+import GroupsPage from './pages/GroupsPage'
+import GirasPage from './pages/GirasPage'
+import GiraCreatePage from './pages/GiraCreatePage'
+import GiraDetailPage from './pages/GiraDetailPage'
+import MediumsPage from './pages/MediumsPage'
+import ListsPage from './pages/ListsPage'
+import ListDetailPage from './pages/ListDetailPage'
+import ReportsPage from './pages/ReportsPage'
 
 const App = () => (
   <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES MUST BE ADDED HERE */}
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </TooltipProvider>
+    <AuthProvider>
+      <ActiveGroupProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/groups" element={<GroupsPage />} />
+              <Route path="/giras" element={<GirasPage />} />
+              <Route path="/giras/new" element={<GiraCreatePage />} />
+              <Route path="/giras/:id" element={<GiraDetailPage />} />
+              <Route path="/mediums" element={<MediumsPage />} />
+              <Route path="/lists" element={<ListsPage />} />
+              <Route path="/lists/:id" element={<ListDetailPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
+      </ActiveGroupProvider>
+    </AuthProvider>
   </BrowserRouter>
 )
 
