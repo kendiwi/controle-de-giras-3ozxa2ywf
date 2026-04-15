@@ -74,7 +74,7 @@ export default function GroupsPage() {
 
   const handleApproveRequest = async (requestId: string) => {
     try {
-      await api.groups.updateMember(requestId, { status: 'approved' })
+      await api.groups.updateMember(requestId, { status: 'approved', role: 'member' })
       toast({ title: 'Sucesso', description: 'Solicitação aprovada.' })
       loadMyGroups()
     } catch (e: any) {
@@ -215,7 +215,7 @@ export default function GroupsPage() {
                       className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                       onClick={() => handleDenyRequest(req.id)}
                     >
-                      Negar
+                      Recusar
                     </Button>
                     <Button
                       size="sm"
@@ -230,7 +230,7 @@ export default function GroupsPage() {
             ))}
             {pendingApprovals.length === 0 && (
               <p className="text-center text-sm text-muted-foreground py-4">
-                Não há solicitações pendentes para revisar no momento.
+                Nenhuma solicitação pendente
               </p>
             )}
           </div>

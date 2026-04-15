@@ -19,23 +19,16 @@ export const api = {
         .getFullList({ filter: `group = "${groupId}" && status = "pending"`, expand: 'user' }),
     updateMember: (id: string, data: any) => pb.collection('group_members').update(id, data),
     getPendingApprovalsInfo: async (userId: string) => {
-      const myAdminMemberships = await pb.collection('group_members').getFullList({
-        filter: `user = "${userId}" && role = "admin" && status = "approved"`,
-      })
-      const adminGroupIds = myAdminMemberships.map((m) => m.group)
-
       const ownedGroups = await pb.collection('groups').getFullList({
         filter: `owner = "${userId}"`,
       })
       const ownedGroupIds = ownedGroups.map((g) => g.id)
 
-      const allAdminGroupIds = Array.from(new Set([...adminGroupIds, ...ownedGroupIds]))
-
-      if (allAdminGroupIds.length === 0) {
+      if (ownedGroupIds.length === 0) {
         return { isOwnerOrAdmin: false, requests: [] }
       }
 
-      const filterStr = allAdminGroupIds.map((id) => `group = "${id}"`).join(' || ')
+      const filterStr = ownedGroupIds.map((id) => `group = "${id}"`).join(' || ')
 
       const requests = await pb.collection('group_members').getFullList({
         filter: `(${filterStr}) && status = "pending"`,
