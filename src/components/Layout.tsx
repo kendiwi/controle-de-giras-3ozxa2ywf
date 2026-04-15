@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { Users, List as ListIcon, CalendarHeart, BarChart3, LogOut } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useActiveGroup } from '@/contexts/ActiveGroupContext'
@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 
 export default function Layout() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { user, signOut } = useAuth()
   const { activeGroup, setActiveGroup } = useActiveGroup()
 
@@ -19,6 +20,7 @@ export default function Layout() {
 
   const handleLeaveGroup = () => {
     setActiveGroup(null)
+    navigate('/groups')
   }
 
   return (

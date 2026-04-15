@@ -25,6 +25,7 @@ export default function GroupsPage() {
 
   const [search, setSearch] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
+  const [hasSearched, setHasSearched] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
 
   useEffect(() => {
@@ -60,8 +61,10 @@ export default function GroupsPage() {
 
   const handleSearch = async () => {
     if (search.length < 3) return
+    setHasSearched(false)
     const res = await api.groups.search(search)
     setSearchResults(res)
+    setHasSearched(true)
   }
 
   const handleJoin = async (groupId: string) => {
@@ -125,17 +128,28 @@ export default function GroupsPage() {
                 <Button onClick={handleSearch}>Buscar</Button>
               </div>
               <div className="space-y-2">
-                {searchResults.map((g) => (
-                  <div
-                    key={g.id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
-                    <span className="font-medium truncate">{g.name}</span>
-                    <Button size="sm" onClick={() => handleJoin(g.id)}>
-                      Pedir Acesso
-                    </Button>
-                  </div>
-                ))}
+                {searchResults.length === 0 && hasSearched && (
+                  <p className="text-center text-sm text-muted-foreground py-4">
+                    Nenhum terreiro encontrado
+                  </p>
+                )}
+                {searchResults.map((g) => {
+                  const isMember = myGroups.some((mg) => mg.group === g.id)
+                  return (
+                    <div
+                      key={g.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
+                      <span className="font-medium truncate">{g.name}</span>
+                      {!isMember && (
+                        <Button size="sm" onClick={() => handleJoin(g.id)}>
+                          Pedir Acesso
+                        </Button>
+                      )}
+                      {isMember && <span className="text-xs text-muted-foreground">Membro</span>}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </DialogContent>
