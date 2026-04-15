@@ -20,7 +20,7 @@ onRecordUpdate((e) => {
       try {
         $app.findFirstRecordByFilter(
           'group_members',
-          "group = {:group} && user = {:user} && role = 'admin' && status = 'approved'",
+          "group = {:group} && user = {:user} && role = 'chefe' && status = 'approved'",
           {
             group: groupId,
             user: authId,
@@ -35,7 +35,7 @@ onRecordUpdate((e) => {
     }
 
     if (!isAllowed) {
-      throw new ForbiddenError('Only group owners and admins can approve or deny members.')
+      throw new ForbiddenError('Only group owners and chefes can approve or deny members.')
     }
   }
 
