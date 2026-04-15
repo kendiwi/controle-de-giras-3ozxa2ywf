@@ -13,10 +13,6 @@ export const api = {
       pb
         .collection('group_members')
         .create({ user: userId, group: groupId, status: 'pending', role: 'member' }),
-    createOwnerMember: (userId: string, groupId: string) =>
-      pb
-        .collection('group_members')
-        .create({ user: userId, group: groupId, status: 'approved', role: 'chefe' }),
     search: (query: string) =>
       pb.collection('groups').getFullList({ filter: `name ~ "${query}"`, expand: 'owner' }),
     getMembers: (groupId: string) =>
@@ -24,13 +20,11 @@ export const api = {
         .collection('group_members')
         .getFullList({ filter: `group = "${groupId}" && status = "pending"`, expand: 'user' }),
     getAllMembers: (groupId: string) =>
-      pb
-        .collection('group_members')
-        .getFullList({
-          filter: `group = "${groupId}" && status = "approved"`,
-          expand: 'user',
-          sort: 'created',
-        }),
+      pb.collection('group_members').getFullList({
+        filter: `group = "${groupId}" && status = "approved"`,
+        expand: 'user',
+        sort: 'created',
+      }),
     updateMember: (id: string, data: any) => pb.collection('group_members').update(id, data),
     deleteMember: (id: string) => pb.collection('group_members').delete(id),
     getPendingApprovalsInfo: async (userId: string) => {

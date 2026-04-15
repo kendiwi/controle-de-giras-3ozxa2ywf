@@ -139,27 +139,8 @@ export default function GroupsPage() {
   const handleCreateGroup = async () => {
     if (!newGroupName) return
     try {
-      const g = await api.groups.create({ name: newGroupName, owner: user.id })
-
-      try {
-        await api.groups.createOwnerMember(user.id, g.id)
-        toast({ title: 'Sucesso', description: 'Terreiro criado com sucesso!' })
-      } catch (memberErr: any) {
-        console.error('Initial member creation failed, retrying...', memberErr)
-        try {
-          await api.groups.createOwnerMember(user.id, g.id)
-          toast({ title: 'Sucesso', description: 'Terreiro criado com sucesso!' })
-        } catch (retryErr: any) {
-          console.error('Retry member creation failed:', retryErr)
-          toast({
-            title: 'Aviso',
-            description:
-              'Terreiro criado, mas houve um erro ao adicionar você como chefe. Busque pelo terreiro, peça acesso e aprove a si mesmo.',
-            variant: 'destructive',
-          })
-        }
-      }
-
+      await api.groups.create({ name: newGroupName, owner: user.id })
+      toast({ title: 'Sucesso', description: 'Terreiro criado com sucesso!' })
       setNewGroupName('')
       loadMyGroups()
     } catch (e: any) {

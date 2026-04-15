@@ -7,8 +7,10 @@ onRecordUpdate((e) => {
   const record = e.record
   const originalStatus = record.original().getString('status')
   const newStatus = record.getString('status')
+  const originalRole = record.original().getString('role')
+  const newRole = record.getString('role')
 
-  if (originalStatus !== newStatus && (newStatus === 'approved' || newStatus === 'denied')) {
+  if (originalStatus !== newStatus || originalRole !== newRole) {
     const groupId = record.getString('group')
     const group = $app.findRecordById('groups', groupId)
 
@@ -20,7 +22,7 @@ onRecordUpdate((e) => {
       try {
         $app.findFirstRecordByFilter(
           'group_members',
-          "group = {:group} && user = {:user} && role = 'chefe' && status = 'approved'",
+          "group = {:group} && user = {:user} && (role = 'chefe' || role = 'admin') && status = 'approved'",
           {
             group: groupId,
             user: authId,
@@ -30,12 +32,24 @@ onRecordUpdate((e) => {
       } catch (_) {}
     }
 
-    if (newStatus === 'denied' && record.getString('user') === authId) {
+    if (
+      newStatus === 'denied' &&
+      record.getString('user') === authId &&
+      originalStatus === 'pending'
+    ) {
       isAllowed = true
     }
 
     if (!isAllowed) {
-      throw new ForbiddenError('Only group owners and chefes can approve or deny members.')
+      throw new ForbiddenError('Only group chefes and admins can modify members.')
+    }
+
+    if (newRole === 'chefe' && originalRole !== 'chefe') {
+      throw new ForbiddenError('Cannot assign chefe role.')
+    }
+
+    if (newRole !== 'chefe' && originalRole === 'chefe') {
+      throw new ForbiddenError('Cannot demote from chefe role.')
     }
   }
 
