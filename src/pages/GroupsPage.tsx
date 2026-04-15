@@ -56,6 +56,9 @@ export default function GroupsPage() {
   const [newGroupName, setNewGroupName] = useState('')
   const [cancellingId, setCancellingId] = useState<string | null>(null)
 
+  const [viewingMembersGroup, setViewingMembersGroup] = useState<any | null>(null)
+  const [groupMembers, setGroupMembers] = useState<any[]>([])
+
   const loadMyGroups = async () => {
     if (!user) return
     try {
@@ -84,6 +87,21 @@ export default function GroupsPage() {
     navigate('/giras')
   }
 
+  const loadGroupMembers = async (groupId: string) => {
+    try {
+      const members = await api.groups.getAllMembers(groupId)
+      setGroupMembers(members)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  useEffect(() => {
+    if (viewingMembersGroup) {
+      loadGroupMembers(viewingMembersGroup.id)
+    }
+  }, [viewingMembersGroup])
+
   const handleApproveRequest = async (req: any, role: string = 'member') => {
     try {
       await api.groups.updateMember(req.id, {
@@ -95,7 +113,7 @@ export default function GroupsPage() {
       setPendingApprovals((prev) => prev.filter((p) => p.id !== req.id))
       toast({
         title: 'Sucesso',
-        description: `Solicitação aprovada como ${role === 'chefe' ? 'Chefe' : 'Membro'}.`,
+        description: `Solicitação aprovada como ${role === 'admin' ? 'Administrador' : 'Membro'}.`,
       })
       loadMyGroups()
     } catch (e: any) {
@@ -297,8 +315,8 @@ export default function GroupsPage() {
                         <DropdownMenuItem onClick={() => handleApproveRequest(req, 'member')}>
                           Como Membro
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleApproveRequest(req, 'chefe')}>
-                          Como Chefe
+                        <DropdownMenuItem onClick={() => handleApproveRequest(req, 'admin')}>
+                          Como Administrador
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -322,7 +340,7 @@ export default function GroupsPage() {
               <Card
                 key={rel.id}
                 className="cursor-pointer hover:border-primary transition-colors relative group"
-                onClick={() => handleSelectGroup(rel.expand.group, isChief ? 'chefe' : 'member')}
+                onClick={() => handleSelectGroup(rel.expand.group, rel.role)}
               >
                 <CardHeader className="p-4 flex flex-row items-center justify-between gap-4">
                   <div className="space-y-1">
@@ -330,9 +348,30 @@ export default function GroupsPage() {
                     <CardDescription>Toque para entrar</CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={isChief ? 'default' : 'secondary'}>
-                      {isChief ? 'Chefe' : 'Membro'}
+                    <Badge
+                      variant={
+                        rel.role === 'chefe'
+                          ? 'default'
+                          : rel.role === 'admin'
+                            ? 'destructive'
+                            : 'secondary'
+                      }
+                    >
+                      {rel.role === 'chefe' ? 'Chefe' : rel.role === 'admin' ? 'Admin' : 'Membro'}
                     </Badge>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setViewingMembersGroup(rel.expand.group)
+                      }}
+                    >
+                      <User className="h-4 w-4 mr-1" />
+                      Membros
+                    </Button>
+
                     {isChief && (
                       <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                         <AlertDialog>
@@ -411,6 +450,82 @@ export default function GroupsPage() {
           )}
         </div>
       </div>
+
+      {viewingMembersGroup && (
+        <Dialog
+          open={!!viewingMembersGroup}
+          onOpenChange={(open) => !open && setViewingMembersGroup(null)}
+        >
+          <DialogContent className="w-[90%] max-w-md rounded-xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Membros: {viewingMembersGroup.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6 mt-4">
+              {['chefe', 'admin', 'member'].map((role) => {
+                const membersInRole = groupMembers.filter((m) => m.role === role)
+                if (membersInRole.length === 0) return null
+
+                const roleLabels: Record<string, string> = {
+                  chefe: 'Chefe',
+                  admin: 'Administradores',
+                  member: 'Membros',
+                }
+
+                return (
+                  <div key={role} className="space-y-2">
+                    <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider border-b pb-1">
+                      {roleLabels[role]}
+                    </h3>
+                    <div className="space-y-2">
+                      {membersInRole.map((m) => (
+                        <div
+                          key={m.id}
+                          className="flex items-center gap-3 bg-muted/30 p-2 rounded-lg"
+                        >
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage
+                              src={
+                                m.expand?.user?.avatar
+                                  ? api.getFileUrl(m.expand.user, m.expand.user.avatar)
+                                  : ''
+                              }
+                            />
+                            <AvatarFallback>
+                              <User className="h-4 w-4" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">
+                              {m.expand?.user?.name || m.expand?.user?.email}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {m.expand?.user?.email}
+                            </span>
+                          </div>
+                          {m.role === 'chefe' && (
+                            <Badge className="ml-auto" variant="default">
+                              Chefe
+                            </Badge>
+                          )}
+                          {m.role === 'admin' && (
+                            <Badge className="ml-auto" variant="destructive">
+                              Admin
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+
+              {groupMembers.length === 0 && (
+                <div className="text-center text-muted-foreground py-4">Carregando membros...</div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <div className="grid grid-cols-2 gap-4 pt-4">
         <Dialog>

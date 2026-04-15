@@ -23,6 +23,14 @@ export const api = {
       pb
         .collection('group_members')
         .getFullList({ filter: `group = "${groupId}" && status = "pending"`, expand: 'user' }),
+    getAllMembers: (groupId: string) =>
+      pb
+        .collection('group_members')
+        .getFullList({
+          filter: `group = "${groupId}" && status = "approved"`,
+          expand: 'user',
+          sort: 'created',
+        }),
     updateMember: (id: string, data: any) => pb.collection('group_members').update(id, data),
     deleteMember: (id: string) => pb.collection('group_members').delete(id),
     getPendingApprovalsInfo: async (userId: string) => {
@@ -30,7 +38,7 @@ export const api = {
         filter: `owner = "${userId}"`,
       })
       const adminMemberships = await pb.collection('group_members').getFullList({
-        filter: `user = "${userId}" && role = "chefe" && status = "approved"`,
+        filter: `user = "${userId}" && (role = "chefe" || role = "admin") && status = "approved"`,
       })
 
       const groupIds = new Set([
