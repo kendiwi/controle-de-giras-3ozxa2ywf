@@ -23,13 +23,22 @@ export const api = {
       const ownedGroups = await pb.collection('groups').getFullList({
         filter: `owner = "${userId}"`,
       })
-      const ownedGroupIds = ownedGroups.map((g) => g.id)
+      const adminMemberships = await pb.collection('group_members').getFullList({
+        filter: `user = "${userId}" && role = "admin" && status = "approved"`,
+      })
 
-      if (ownedGroupIds.length === 0) {
+      const groupIds = new Set([
+        ...ownedGroups.map((g) => g.id),
+        ...adminMemberships.map((m) => m.group),
+      ])
+
+      if (groupIds.size === 0) {
         return { isOwnerOrAdmin: false, requests: [] }
       }
 
-      const filterStr = ownedGroupIds.map((id) => `group = "${id}"`).join(' || ')
+      const filterStr = Array.from(groupIds)
+        .map((id) => `group = "${id}"`)
+        .join(' || ')
 
       const requests = await pb.collection('group_members').getFullList({
         filter: `(${filterStr}) && status = "pending"`,

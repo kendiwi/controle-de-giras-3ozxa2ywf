@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Search, Plus, User, LogOut, ArrowLeftRight } from 'lucide-react'
+import { Search, Plus, User, LogOut, ArrowLeftRight, ChevronDown } from 'lucide-react'
 import { useRealtime } from '@/hooks/use-realtime'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
 
@@ -73,10 +73,13 @@ export default function GroupsPage() {
     navigate('/giras')
   }
 
-  const handleApproveRequest = async (requestId: string) => {
+  const handleApproveRequest = async (requestId: string, role: string = 'member') => {
     try {
-      await api.groups.updateMember(requestId, { status: 'approved', role: 'member' })
-      toast({ title: 'Sucesso', description: 'Solicitação aprovada.' })
+      await api.groups.updateMember(requestId, { status: 'approved', role })
+      toast({
+        title: 'Sucesso',
+        description: `Solicitação aprovada como ${role === 'admin' ? 'Chefe' : 'Membro'}.`,
+      })
       loadMyGroups()
     } catch (e: any) {
       toast({ title: 'Erro', description: getErrorMessage(e), variant: 'destructive' })
@@ -216,8 +219,11 @@ export default function GroupsPage() {
                 <CardHeader className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <CardTitle className="text-base">
-                      {req.expand?.user?.name || req.expand?.user?.email || 'Usuário'}
+                      {req.expand?.user?.name || 'Usuário Sem Nome'}
                     </CardTitle>
+                    <div className="text-sm text-muted-foreground mb-1">
+                      {req.expand?.user?.email}
+                    </div>
                     <CardDescription>
                       quer entrar em <strong>{req.expand?.group?.name}</strong>
                     </CardDescription>
@@ -231,13 +237,21 @@ export default function GroupsPage() {
                     >
                       Recusar
                     </Button>
-                    <Button
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                      onClick={() => handleApproveRequest(req.id)}
-                    >
-                      Aprovar
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                          Aprovar <ChevronDown className="ml-1 h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleApproveRequest(req.id, 'member')}>
+                          Como Membro
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleApproveRequest(req.id, 'admin')}>
+                          Como Chefe
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </CardHeader>
               </Card>
@@ -252,18 +266,26 @@ export default function GroupsPage() {
 
         <div className="space-y-4">
           <h2 className="text-lg font-semibold border-b pb-2">Meus Terreiros</h2>
-          {activeGroups.map((rel) => (
-            <Card
-              key={rel.id}
-              className="cursor-pointer hover:border-primary transition-colors"
-              onClick={() => handleSelectGroup(rel.expand.group)}
-            >
-              <CardHeader className="p-4">
-                <CardTitle className="text-lg">{rel.expand.group.name}</CardTitle>
-                <CardDescription>Toque para entrar</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
+          {activeGroups.map((rel) => {
+            const isChief = rel.role === 'admin' || rel.expand?.group?.owner === user?.id
+            return (
+              <Card
+                key={rel.id}
+                className="cursor-pointer hover:border-primary transition-colors"
+                onClick={() => handleSelectGroup(rel.expand.group)}
+              >
+                <CardHeader className="p-4 flex flex-row items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg">{rel.expand.group.name}</CardTitle>
+                    <CardDescription>Toque para entrar</CardDescription>
+                  </div>
+                  <Badge variant={isChief ? 'default' : 'secondary'}>
+                    {isChief ? 'Chefe' : 'Membro'}
+                  </Badge>
+                </CardHeader>
+              </Card>
+            )
+          })}
           {activeGroups.length === 0 && (
             <p className="text-center text-sm text-muted-foreground py-4">
               Você ainda não participa de nenhum grupo.
