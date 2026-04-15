@@ -12,13 +12,23 @@ export default function AuthPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
 
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleAuth = async (isLogin: boolean) => {
+    if (!isLogin && !name.trim()) {
+      toast({
+        title: 'Erro',
+        description: 'O nome é obrigatório para cadastro.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setLoading(true)
-    const { error } = isLogin ? await signIn(email, password) : await signUp(email, password)
+    const { error } = isLogin ? await signIn(email, password) : await signUp(email, password, name)
     setLoading(false)
     if (error) {
       toast({
@@ -69,6 +79,15 @@ export default function AuthPage() {
           </TabsContent>
 
           <TabsContent value="register" className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Seu nome completo"
+              />
+            </div>
             <div className="space-y-2">
               <Label>Email</Label>
               <Input
