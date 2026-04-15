@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-15T04:53:38.392Z",
+  "generatedAt": "2026-04-15T05:04:01.746Z",
   "collections": [
     {
       "name": "users",
@@ -115,7 +115,7 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["admin", "member"]
+          "selectValues": ["chefe", "member"]
         },
         {
           "name": "status",

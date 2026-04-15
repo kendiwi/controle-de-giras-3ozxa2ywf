@@ -3,20 +3,37 @@ import { api } from '@/services/api'
 import { useActiveGroup } from '@/contexts/ActiveGroupContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Plus, Calendar as CalIcon, ChevronRight } from 'lucide-react'
+import { Plus, Calendar as CalIcon, ChevronRight, RefreshCw } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 export default function GirasPage() {
   const { activeGroup } = useActiveGroup()
   const [giras, setGiras] = useState<any[]>([])
   const navigate = useNavigate()
+  const { toast } = useToast()
 
   useEffect(() => {
     if (activeGroup) loadGiras()
   }, [activeGroup])
+
+  const handleReopen = async (e: React.MouseEvent, giraId: string) => {
+    e.stopPropagation()
+    try {
+      await api.giras.update(giraId, { status: 'ongoing' })
+      toast({ title: 'Sucesso', description: 'Gira reaberta com sucesso!' })
+      loadGiras()
+    } catch (err: any) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível reabrir a gira.',
+        variant: 'destructive',
+      })
+    }
+  }
 
   const loadGiras = async () => {
     const data = await api.giras.list(activeGroup!.id)
@@ -60,14 +77,26 @@ export default function GirasPage() {
               <div className="flex-1 p-4 flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base leading-tight mb-1">{g.name}</CardTitle>
-                  <span
-                    className={cn(
-                      'text-[10px] uppercase font-bold px-2 py-0.5 rounded-full',
-                      getStatusColor(g.status),
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        'text-[10px] uppercase font-bold px-2 py-0.5 rounded-full',
+                        getStatusColor(g.status),
+                      )}
+                    >
+                      {getStatusText(g.status)}
+                    </span>
+                    {g.status === 'finalized' && activeGroup?.role === 'chefe' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 text-xs px-2"
+                        onClick={(e) => handleReopen(e, g.id)}
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" /> Reabrir
+                      </Button>
                     )}
-                  >
-                    {getStatusText(g.status)}
-                  </span>
+                  </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </div>

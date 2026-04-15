@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
-export type Group = { id: string; name: string }
+export type Group = { id: string; name: string; role?: string }
 
 interface ActiveGroupContextType {
   activeGroup: Group | null

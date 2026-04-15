@@ -24,7 +24,7 @@ export const api = {
         filter: `owner = "${userId}"`,
       })
       const adminMemberships = await pb.collection('group_members').getFullList({
-        filter: `user = "${userId}" && role = "admin" && status = "approved"`,
+        filter: `user = "${userId}" && role = "chefe" && status = "approved"`,
       })
 
       const groupIds = new Set([

@@ -68,8 +68,8 @@ export default function GroupsPage() {
     loadMyGroups()
   })
 
-  const handleSelectGroup = (group: Group) => {
-    setActiveGroup({ id: group.id, name: group.name })
+  const handleSelectGroup = (group: Group, role: string) => {
+    setActiveGroup({ id: group.id, name: group.name, role })
     navigate('/giras')
   }
 
@@ -84,7 +84,7 @@ export default function GroupsPage() {
       setPendingApprovals((prev) => prev.filter((p) => p.id !== req.id))
       toast({
         title: 'Sucesso',
-        description: `Solicitação aprovada como ${role === 'admin' ? 'Chefe' : 'Membro'}.`,
+        description: `Solicitação aprovada como ${role === 'chefe' ? 'Chefe' : 'Membro'}.`,
       })
       loadMyGroups()
     } catch (e: any) {
@@ -111,14 +111,13 @@ export default function GroupsPage() {
     if (!newGroupName) return
     try {
       const g = await api.groups.create({ name: newGroupName, owner: user.id })
-      await api.groups.join(user.id, g.id)
-      const members = await api.groups.getMembers(g.id)
-      if (members.length > 0) {
-        await api.groups.updateMember(members[0].id, {
-          status: 'approved',
-          role: 'admin',
-        })
-      }
+      const joinReq = await api.groups.join(user.id, g.id)
+      await api.groups.updateMember(joinReq.id, {
+        status: 'approved',
+        role: 'chefe',
+        user: user.id,
+        group: g.id,
+      })
       toast({ title: 'Sucesso', description: 'Terreiro criado com sucesso!' })
       setNewGroupName('')
       loadMyGroups()
@@ -258,7 +257,7 @@ export default function GroupsPage() {
                         <DropdownMenuItem onClick={() => handleApproveRequest(req, 'member')}>
                           Como Membro
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleApproveRequest(req, 'admin')}>
+                        <DropdownMenuItem onClick={() => handleApproveRequest(req, 'chefe')}>
                           Como Chefe
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -278,12 +277,12 @@ export default function GroupsPage() {
         <div className="space-y-4">
           <h2 className="text-lg font-semibold border-b pb-2">Meus Terreiros</h2>
           {activeGroups.map((rel) => {
-            const isChief = rel.role === 'admin' || rel.expand?.group?.owner === user?.id
+            const isChief = rel.role === 'chefe' || rel.expand?.group?.owner === user?.id
             return (
               <Card
                 key={rel.id}
                 className="cursor-pointer hover:border-primary transition-colors"
-                onClick={() => handleSelectGroup(rel.expand.group)}
+                onClick={() => handleSelectGroup(rel.expand.group, isChief ? 'chefe' : 'member')}
               >
                 <CardHeader className="p-4 flex flex-row items-center justify-between gap-4">
                   <div className="space-y-1">
