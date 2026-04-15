@@ -3,12 +3,10 @@ import pb from '@/lib/pocketbase/client'
 export const api = {
   groups: {
     listMy: (userId: string) =>
-      pb
-        .collection('group_members')
-        .getFullList({
-          filter: `user = "${userId}" && (status = "approved" || status = "pending")`,
-          expand: 'group',
-        }),
+      pb.collection('group_members').getFullList({
+        filter: `user = "${userId}" && (status = "approved" || status = "pending")`,
+        expand: 'group',
+      }),
     create: (data: any) => pb.collection('groups').create(data),
     join: (userId: string, groupId: string) =>
       pb
