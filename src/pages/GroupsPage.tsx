@@ -26,6 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Search, Plus, User, LogOut, ArrowLeftRight } from 'lucide-react'
 import { useRealtime } from '@/hooks/use-realtime'
+import { getErrorMessage } from '@/lib/pocketbase/errors'
 
 export default function GroupsPage() {
   const { user, signOut } = useAuth()
@@ -77,7 +78,7 @@ export default function GroupsPage() {
       toast({ title: 'Sucesso', description: 'Solicitação aprovada.' })
       loadMyGroups()
     } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' })
+      toast({ title: 'Erro', description: getErrorMessage(e), variant: 'destructive' })
     }
   }
 
@@ -87,7 +88,7 @@ export default function GroupsPage() {
       toast({ title: 'Sucesso', description: 'Solicitação negada.' })
       loadMyGroups()
     } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' })
+      toast({ title: 'Erro', description: getErrorMessage(e), variant: 'destructive' })
     }
   }
 
@@ -107,7 +108,7 @@ export default function GroupsPage() {
       setNewGroupName('')
       loadMyGroups()
     } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' })
+      toast({ title: 'Erro', description: getErrorMessage(e), variant: 'destructive' })
     }
   }
 
@@ -127,7 +128,7 @@ export default function GroupsPage() {
     } catch (e: any) {
       toast({
         title: 'Erro',
-        description: 'Você já enviou solicitação ou ocorreu um erro.',
+        description: getErrorMessage(e) || 'Você já enviou solicitação ou ocorreu um erro.',
         variant: 'destructive',
       })
     }
