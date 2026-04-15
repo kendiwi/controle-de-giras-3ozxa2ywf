@@ -3,6 +3,14 @@ import { Users, List as ListIcon, CalendarHeart, BarChart3, LogOut } from 'lucid
 import { useAuth } from '@/hooks/use-auth'
 import { useActiveGroup } from '@/contexts/ActiveGroupContext'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
 export default function Layout() {
@@ -16,6 +24,7 @@ export default function Layout() {
   const handleLogout = () => {
     signOut()
     setActiveGroup(null)
+    navigate('/auth')
   }
 
   const handleLeaveGroup = () => {
@@ -38,18 +47,35 @@ export default function Layout() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleLeaveGroup}
-              className="text-xs bg-primary-foreground/20 px-2 py-1 rounded"
+              className="text-xs bg-primary-foreground/20 px-2 py-1 rounded hover:bg-primary-foreground/30 transition-colors"
             >
               Trocar
             </button>
-            <Avatar
-              className="h-8 w-8 cursor-pointer border border-primary-foreground/30"
-              onClick={handleLogout}
-            >
-              <AvatarFallback className="bg-primary-foreground text-primary font-bold text-xs">
-                {user?.name?.charAt(0) || 'U'}
-              </AvatarFallback>
-            </Avatar>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Avatar className="h-8 w-8 cursor-pointer border border-primary-foreground/30 hover:opacity-80 transition-opacity">
+                  <AvatarFallback className="bg-primary-foreground text-primary font-bold text-xs">
+                    {user?.name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user?.name || 'Usuário'}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sair da conta</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
       )}
