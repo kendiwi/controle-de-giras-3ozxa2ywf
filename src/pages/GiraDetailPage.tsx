@@ -20,9 +20,18 @@ export default function GiraDetailPage() {
 
   const loadData = async () => {
     if (!id) return
-    const [g, a] = await Promise.all([api.giras.get(id), api.attendance.list(id)])
-    setGira(g)
-    setAttendances(a)
+    try {
+      const [g, a] = await Promise.all([api.giras.get(id), api.attendance.list(id)])
+      setGira(g)
+      setAttendances(a)
+    } catch (err) {
+      toast({
+        title: 'Gira não encontrada',
+        description: 'A gira que você tentou acessar não existe.',
+        variant: 'destructive',
+      })
+      navigate('/giras', { replace: true })
+    }
   }
 
   useEffect(() => {
@@ -53,7 +62,21 @@ export default function GiraDetailPage() {
 
   const toggleAttendance = async (attId: string, present: boolean) => {
     if (gira?.status === 'finalized') return
-    await api.attendance.update(attId, present)
+
+    // Optimistic update
+    setAttendances((prev) => prev.map((a) => (a.id === attId ? { ...a, present } : a)))
+
+    try {
+      await api.attendance.update(attId, present)
+    } catch (err) {
+      // Revert on error
+      setAttendances((prev) => prev.map((a) => (a.id === attId ? { ...a, present: !present } : a)))
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível salvar a presença.',
+        variant: 'destructive',
+      })
+    }
   }
 
   if (!gira) return null
@@ -162,6 +185,18 @@ export default function GiraDetailPage() {
             className="w-full h-12 text-base font-bold bg-primary hover:bg-primary/90 flex gap-2"
           >
             <CheckCircle2 className="h-5 w-5" /> Finalizar Gira
+          </Button>
+        </div>
+      )}
+
+      {isFinalized && (
+        <div className="fixed bottom-16 w-full p-4 bg-background/80 backdrop-blur border-t z-20">
+          <Button
+            onClick={() => handleStatusChange('ongoing')}
+            variant="outline"
+            className="w-full h-12 text-base font-bold flex gap-2"
+          >
+            Reabrir Gira
           </Button>
         </div>
       )}

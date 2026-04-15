@@ -64,13 +64,11 @@ export const api = {
   },
   attendance: {
     list: (giraId: string) =>
-      pb
-        .collection('attendance')
-        .getFullList({
-          filter: `gira = "${giraId}"`,
-          expand: 'medium',
-          sort: 'expand.medium.name',
-        }),
+      pb.collection('attendance').getFullList({
+        filter: `gira = "${giraId}"`,
+        expand: 'medium',
+        sort: 'expand.medium.name',
+      }),
     update: (id: string, present: boolean) => pb.collection('attendance').update(id, { present }),
     listForGroup: async (groupId: string) => {
       const giras = await api.giras.list(groupId)
