@@ -17,20 +17,25 @@ export default function GiraDetailPage() {
   const { toast } = useToast()
   const [gira, setGira] = useState<any>(null)
   const [attendances, setAttendances] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   const loadData = async () => {
     if (!id) return
     try {
+      setLoading(true)
       const [g, a] = await Promise.all([api.giras.get(id), api.attendance.list(id)])
       setGira(g)
       setAttendances(a)
     } catch (err) {
+      console.error(err)
       toast({
         title: 'Gira não encontrada',
-        description: 'A gira que você tentou acessar não existe.',
+        description: 'A gira que você tentou acessar não existe ou ocorreu um erro.',
         variant: 'destructive',
       })
       navigate('/giras', { replace: true })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -77,6 +82,14 @@ export default function GiraDetailPage() {
         variant: 'destructive',
       })
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col h-full bg-gray-50 items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   if (!gira) return null

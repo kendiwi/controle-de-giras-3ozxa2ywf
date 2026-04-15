@@ -63,20 +63,23 @@ export const api = {
     update: (id: string, data: any) => pb.collection('giras').update(id, data),
   },
   attendance: {
-    list: (giraId: string) =>
-      pb.collection('attendance').getFullList({
+    list: async (giraId: string) => {
+      const records = await pb.collection('attendance').getFullList({
         filter: `gira = "${giraId}"`,
         expand: 'medium',
-        sort: 'expand.medium.name',
-      }),
+      })
+      return records.sort((a, b) => {
+        const nameA = a.expand?.medium?.name || ''
+        const nameB = b.expand?.medium?.name || ''
+        return nameA.localeCompare(nameB)
+      })
+    },
     update: (id: string, present: boolean) => pb.collection('attendance').update(id, { present }),
     listForGroup: async (groupId: string) => {
       const giras = await api.giras.list(groupId)
       if (giras.length === 0) return []
-      const giraIds = giras.map((g) => `"${g.id}"`).join(',')
-      return pb
-        .collection('attendance')
-        .getFullList({ filter: `gira ?= [${giraIds}]`, expand: 'gira,medium' })
+      const filterStr = giras.map((g) => `gira = "${g.id}"`).join(' || ')
+      return pb.collection('attendance').getFullList({ filter: filterStr, expand: 'gira,medium' })
     },
   },
   getFileUrl: (record: any, filename: string) => pb.files.getUrl(record, filename),
